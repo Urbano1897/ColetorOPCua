@@ -1,0 +1,117 @@
+# OPC UA cycle collector. Copy to config.yaml and edit.
+#
+# Secrets do not belong in this file. Database and OPC UA passwords are read
+# from the environment. See .env.example.
+#
+# The node ids below match the bundled simulator (namespace index 2).
+
+opcua:
+  # Hostname the client can actually route to. Inside Compose this is the
+  # service name; on one machine it is 127.0.0.1.
+  endpoint: "opc.tcp://127.0.0.1:4840/industrial/simulator"
+  application_uri: "urn:opcua-collector:client"
+
+  # Environment variable names, not the secrets. Leave the variables unset
+  # for anonymous access (the bundled simulator).
+  username_env: "OPCUA_USERNAME"
+  password_env: "OPCUA_PASSWORD"
+
+  timeout_s: 10
+  session_timeout_ms: 60000
+  # How often the server may publish the cycle counter, in milliseconds.
+  publishing_interval_ms: 200
+
+  reconnect:
+    initial_s: 1
+    max_s: 30
+    multiplier: 2
+
+database:
+  # Name of the environment variable that holds the postgresql:// URL.
+  dsn_env: "DATABASE_URL"
+  table: "cycle_samples"
+  timestamp_column: "sampled_at"
+
+  reconnect:
+    initial_s: 1
+    max_s: 30
+    multiplier: 2
+
+# Changing this node is what creates a row. The new value is stored in `column`.
+trigger:
+  node_id: "ns=2;s=Machine.CycleCounter"
+  column: "cycle_number"
+
+# Read together, in one OPC UA Read, after each trigger change.
+# type: integer | float | boolean | string
+# column: lowercase SQL identifier. The table is created from this list.
+nodes:
+  - node_id: "ns=2;s=Machine.MeltTemperature"
+    column: "melt_temperature"
+    type: "float"
+    unit: "°C"
+    description: "Melt temperature at the end of the shot"
+
+  - node_id: "ns=2;s=Machine.MoldTemperature"
+    column: "mold_temperature"
+    type: "float"
+    unit: "°C"
+    description: "Mold temperature at the end of the shot"
+
+  - node_id: "ns=2;s=Machine.InjectionPressure"
+    column: "injection_pressure"
+    type: "float"
+    unit: "MPa"
+    description: "Peak injection pressure during the shot"
+
+  - node_id: "ns=2;s=Machine.HoldPressure"
+    column: "hold_pressure"
+    type: "float"
+    unit: "MPa"
+    description: "Hold pressure applied after injection"
+
+  - node_id: "ns=2;s=Machine.InjectionTime"
+    column: "injection_time"
+    type: "float"
+    unit: "s"
+    description: "Duration of the injection phase"
+
+  - node_id: "ns=2;s=Machine.CoolingTime"
+    column: "cooling_time"
+    type: "float"
+    unit: "s"
+    description: "Duration of the cooling phase"
+
+  - node_id: "ns=2;s=Machine.CycleTime"
+    column: "cycle_time"
+    type: "float"
+    unit: "s"
+    description: "Shot-to-shot time reported by the machine"
+
+  - node_id: "ns=2;s=Machine.ShotVolume"
+    column: "shot_volume"
+    type: "float"
+    unit: "cm³"
+    description: "Volume injected during the shot"
+
+  - node_id: "ns=2;s=Machine.ClampForce"
+    column: "clamp_force"
+    type: "float"
+    unit: "kN"
+    description: "Clamp force during the shot"
+
+  - node_id: "ns=2;s=Machine.ScrewCushion"
+    column: "screw_cushion"
+    type: "float"
+    unit: "mm"
+    description: "Screw cushion after injection"
+
+  - node_id: "ns=2;s=Machine.PartQuality"
+    column: "part_quality"
+    type: "string"
+    description: "Shot judgement: good, review, scrap, or idle before the first shot"
+
+  - node_id: "ns=2;s=Machine.AlarmActive"
+    column: "alarm_active"
+    type: "boolean"
+    description: "True when the shot was judged scrap"

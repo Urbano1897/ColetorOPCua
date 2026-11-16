@@ -1,0 +1,64 @@
+# Local demonstration. The database password exists only for this stack.
+# Do not reuse it, and do not expose the simulator on a plant network.
+
+name: opcua-collector
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: collector
+      POSTGRES_PASSWORD: collector
+      POSTGRES_DB: machine_data
+    ports:
+      - "5432:5432"
+    volumes:
+      - machine-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collector -d machine_data"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  simulator:
+    build: .
+    entrypoint: ["opcua-simulator"]
+    environment:
+      SIM_ENDPOINT: opc.tcp://simulator:4840/industrial/simulator
+      SIM_CYCLE_PERIOD_S: "4"
+      SIM_SEED: "0"
+      LOG_LEVEL: INFO
+    ports:
+      - "4840:4840"
+    init: true
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import socket; s=socket.create_connection(('127.0.0.1', 4840), 2); s.close()",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 15s
+
+  collector:
+    build: .
+    command: ["--config", "/config/config.yaml"]
+    environment:
+      DATABASE_URL: postgresql://collector:collector@postgres:5432/machine_data
+      LOG_LEVEL: INFO
+    volumes:
+      - ./deploy/config.docker.yaml:/config/config.yaml:ro
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      simulator:
+        condition: service_healthy
+
+volumes:
+  machine-data:
