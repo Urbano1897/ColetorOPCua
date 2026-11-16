@@ -1,0 +1,100 @@
+# Collector config mounted by docker-compose.yml.
+# Same signals as config.example.yaml. The endpoint uses the Compose DNS name.
+# DATABASE_URL is injected by Compose and is not stored here.
+
+opcua:
+  endpoint: "opc.tcp://simulator:4840/industrial/simulator"
+  application_uri: "urn:opcua-collector:client"
+  username_env: "OPCUA_USERNAME"
+  password_env: "OPCUA_PASSWORD"
+  timeout_s: 10
+  session_timeout_ms: 60000
+  publishing_interval_ms: 200
+  reconnect:
+    initial_s: 1
+    max_s: 30
+    multiplier: 2
+
+database:
+  dsn_env: "DATABASE_URL"
+  table: "cycle_samples"
+  timestamp_column: "sampled_at"
+  reconnect:
+    initial_s: 1
+    max_s: 30
+    multiplier: 2
+
+trigger:
+  node_id: "ns=2;s=Machine.CycleCounter"
+  column: "cycle_number"
+
+nodes:
+  - node_id: "ns=2;s=Machine.MeltTemperature"
+    column: "melt_temperature"
+    type: "float"
+    unit: "°C"
+    description: "Melt temperature at the end of the shot"
+
+  - node_id: "ns=2;s=Machine.MoldTemperature"
+    column: "mold_temperature"
+    type: "float"
+    unit: "°C"
+    description: "Mold temperature at the end of the shot"
+
+  - node_id: "ns=2;s=Machine.InjectionPressure"
+    column: "injection_pressure"
+    type: "float"
+    unit: "MPa"
+    description: "Peak injection pressure during the shot"
+
+  - node_id: "ns=2;s=Machine.HoldPressure"
+    column: "hold_pressure"
+    type: "float"
+    unit: "MPa"
+    description: "Hold pressure applied after injection"
+
+  - node_id: "ns=2;s=Machine.InjectionTime"
+    column: "injection_time"
+    type: "float"
+    unit: "s"
+    description: "Duration of the injection phase"
+
+  - node_id: "ns=2;s=Machine.CoolingTime"
+    column: "cooling_time"
+    type: "float"
+    unit: "s"
+    description: "Duration of the cooling phase"
+
+  - node_id: "ns=2;s=Machine.CycleTime"
+    column: "cycle_time"
+    type: "float"
+    unit: "s"
+    description: "Shot-to-shot time reported by the machine"
+
+  - node_id: "ns=2;s=Machine.ShotVolume"
+    column: "shot_volume"
+    type: "float"
+    unit: "cm³"
+    description: "Volume injected during the shot"
+
+  - node_id: "ns=2;s=Machine.ClampForce"
+    column: "clamp_force"
+    type: "float"
+    unit: "kN"
+    description: "Clamp force during the shot"
+
+  - node_id: "ns=2;s=Machine.ScrewCushion"
+    column: "screw_cushion"
+    type: "float"
+    unit: "mm"
+    description: "Screw cushion after injection"
+
+  - node_id: "ns=2;s=Machine.PartQuality"
+    column: "part_quality"
+    type: "string"
+    description: "Shot judgement: good, review, scrap, or idle before the first shot"
+
+  - node_id: "ns=2;s=Machine.AlarmActive"
+    column: "alarm_active"
+    type: "boolean"
+    description: "True when the shot was judged scrap"
